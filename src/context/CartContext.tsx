@@ -9,6 +9,7 @@ interface CartItem {
   quantity: number;
   image: string;
   productType: 'dress' | 'bracelet' | 'necklace';
+  size?: string;
   measurements?: {
     shoulders?: number;
     waist?: number;
