@@ -102,7 +102,10 @@ export function ProductModal({
   };
 
   const handleAddToCart = () => {
+    console.log('Current user state:', user);
+    
     if (!user) {
+      console.log('User is not authenticated');
       toast.error('Пожалуйста, авторизуйтесь, чтобы добавить товар в корзину');
       return;
     }
@@ -119,7 +122,8 @@ export function ProductModal({
 
     console.log('Adding to cart:', {
       product,
-      initialMeasurements
+      initialMeasurements,
+      user
     });
     
     cart.addToCart({

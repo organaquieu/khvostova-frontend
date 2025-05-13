@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -9,12 +9,43 @@ const api = axios.create({
 
 // Add auth token to requests if it exists
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
+
+// Handle 401 responses
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      // Проверяем, не истек ли токен
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          // Пытаемся декодировать JWT токен
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const expirationTime = payload.exp * 1000; // конвертируем в миллисекунды
+          
+          if (Date.now() >= expirationTime) {
+            console.log('Token expired, clearing auth data');
+            localStorage.removeItem('token');
+            window.location.href = '/'; // Редирект на главную
+          }
+        } catch (e) {
+          console.error('Error parsing token:', e);
+          localStorage.removeItem('token');
+          window.location.href = '/';
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Products API
 export const productsApi = {

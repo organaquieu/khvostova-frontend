@@ -3,11 +3,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from '@/components/shared/header';
 import { Toaster } from 'react-hot-toast';
-import { UserProvider } from '@/context/UserContext';
 import { ScrollHandler } from '@/components/shared/ScrollHandler';
-import { CartProvider } from '@/context/CartContext';
 import { Suspense } from 'react';
 import QueryProvider from '@/providers/QueryProvider';
+import { CartProvider } from '@/context/CartContext';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,16 +22,6 @@ export const metadata: Metadata = {
   title: "ХВОСТОВА",
   description: "Каталог дизайнерской одежды",
 };
-
-function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <CartProvider>
-      <UserProvider>
-        {children}
-      </UserProvider>
-    </CartProvider>
-  );
-}
 
 export default function RootLayout({
   children,
@@ -52,14 +41,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <QueryProvider>
-          <Providers>
+          <CartProvider>
             <Suspense fallback={<div>Loading...</div>}>
               <Header />
               <ScrollHandler />
               {children}
               <Toaster position="top-center" />
             </Suspense>
-          </Providers>
+          </CartProvider>
         </QueryProvider>
       </body>
     </html>

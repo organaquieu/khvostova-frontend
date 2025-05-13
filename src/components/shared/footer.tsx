@@ -67,8 +67,35 @@ export default function Footer() {
           </ul>
         </div>
 
+        {/* Колонка 3: Навигация */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Навигация</h3>
+          <ul className="space-y-3 text-gray-400">
+            <li>
+              <Link href="/catalog" className="hover:text-white transition-colors text-sm sm:text-base">
+                Каталог
+              </Link>
+            </li>
+            <li>
+              <Link href="/about" className="hover:text-white transition-colors text-sm sm:text-base">
+                О нас
+              </Link>
+            </li>
+            <li>
+              <Link href="/delivery" className="hover:text-white transition-colors text-sm sm:text-base">
+                Доставка
+              </Link>
+            </li>
+            <li>
+              <Link href="/contacts" className="hover:text-white transition-colors text-sm sm:text-base">
+                Контакты
+              </Link>
+            </li>
+          </ul>
+        </div>
+
         {/* Колонка 4: Подписка */}
-        <div className="sm:col-span-2 lg:col-span-1">
+        <div>
           <h3 className="text-lg font-semibold mb-4">Подписаться на новости</h3>
           <p className="text-gray-400 mb-4 text-sm sm:text-base">
             Узнавайте первыми о новых коллекциях и эксклюзивных предложениях

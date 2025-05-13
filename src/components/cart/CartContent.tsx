@@ -2,12 +2,14 @@
 
 import { useCart, useUpdateCartItem, useRemoveFromCart, useClearCart } from '@/hooks/useCart';
 import { useCreateOrder } from '@/hooks/useOrders';
+import { useAuth } from '@/hooks/useAuth';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'react-hot-toast';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface CartItem {
   id: string;
@@ -26,7 +28,9 @@ interface CartItem {
 }
 
 export default function CartContent() {
-  const { data: cartItems = [], isLoading } = useCart();
+  const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
+  const { data: cartItems = [], isLoading, error } = useCart();
   const updateCartItem = useUpdateCartItem();
   const removeFromCart = useRemoveFromCart();
   const clearCart = useClearCart();
@@ -34,6 +38,57 @@ export default function CartContent() {
   
   const [shippingAddress, setShippingAddress] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <p className="text-xl text-gray-500">Пожалуйста, войдите в аккаунт</p>
+        <Button
+          className="mt-4"
+          onClick={() => router.push('/')}
+        >
+          Вернуться на главную
+        </Button>
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error('Cart error:', error);
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <p className="text-xl text-red-500">Ошибка при загрузке корзины</p>
+        <Button
+          className="mt-4"
+          onClick={() => router.push('/')}
+        >
+          Вернуться в каталог
+        </Button>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p>Загрузка корзины...</p>
+      </div>
+    );
+  }
+
+  if (!cartItems || cartItems.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <p className="text-xl text-gray-500">Корзина пуста</p>
+        <Button
+          className="mt-4"
+          onClick={() => router.push('/')}
+        >
+          Вернуться в каталог
+        </Button>
+      </div>
+    );
+  }
 
   const handleMeasurementChange = (itemId: string, measurementType: string, value: string) => {
     const numValue = value === '' ? undefined : Number(value);
@@ -46,7 +101,7 @@ export default function CartContent() {
     };
 
     updateCartItem.mutate({
-      id: itemId,
+      itemId,
       data: {
         quantity: item.quantity,
         measurements: newMeasurements
@@ -93,31 +148,14 @@ export default function CartContent() {
       onSuccess: () => {
         toast.success('Заказ успешно оформлен!');
         clearCart.mutate();
+        router.push('/');
       },
       onError: (error) => {
-        toast.error('Произошла ошибка при оформлении заказа');
         console.error('Order creation error:', error);
+        toast.error('Произошла ошибка при оформлении заказа');
       }
     });
   };
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (cartItems.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <p className="text-xl text-gray-500">Корзина пуста</p>
-        <Button
-          className="mt-4"
-          onClick={() => window.location.href = '/'}
-        >
-          Вернуться в каталог
-        </Button>
-      </div>
-    );
-  }
 
   const total = cartItems.reduce((sum: number, item: CartItem) => sum + item.price * item.quantity, 0);
 
@@ -135,7 +173,7 @@ export default function CartContent() {
                 <div className="flex items-center space-x-2 mt-2">
                   <button
                     onClick={() => updateCartItem.mutate({
-                      id: item.id,
+                      itemId: item.id,
                       data: { quantity: item.quantity - 1 }
                     })}
                     className="p-1 rounded-full hover:bg-gray-100"
@@ -145,7 +183,7 @@ export default function CartContent() {
                   <span>{item.quantity}</span>
                   <button
                     onClick={() => updateCartItem.mutate({
-                      id: item.id,
+                      itemId: item.id,
                       data: { quantity: item.quantity + 1 }
                     })}
                     className="p-1 rounded-full hover:bg-gray-100"
@@ -161,6 +199,7 @@ export default function CartContent() {
                 Удалить
               </button>
             </div>
+            
             {item.productType === 'dress' && (
               <div className="mt-4 space-y-2">
                 <div className="flex items-center space-x-2">
@@ -192,6 +231,7 @@ export default function CartContent() {
                 </div>
               </div>
             )}
+            
             {item.productType === 'bracelet' && (
               <div className="mt-4 space-y-2">
                 <div className="flex items-center space-x-2">
@@ -205,6 +245,7 @@ export default function CartContent() {
                 </div>
               </div>
             )}
+            
             {item.productType === 'necklace' && (
               <div className="mt-4 space-y-2">
                 <div className="flex items-center space-x-2">

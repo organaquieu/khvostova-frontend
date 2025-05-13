@@ -16,6 +16,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
 import RegisterModal from '../auth/RegisterModal';
+import { useUser } from '@/context/UserContext';
 
 interface Props {
   hasSearch?: boolean;
@@ -26,7 +27,8 @@ interface Props {
 export default function Header() {
   const router = useRouter();
   const cart = useCart();
-  const { register: registerUser } = useAuth();
+  const { register: registerUser, login: loginUser } = useAuth();
+  const { user, setUser } = useUser();
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [loginData, setLoginData] = useState({ login: '', password: '' });
@@ -37,13 +39,6 @@ export default function Header() {
     email: '',
     password: ''
   });
-  const [users, setUsers] = useState<Array<{
-    name: string;
-    login: string;
-    phone: string;
-    email: string;
-    password: string;
-  }>>([]);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
 
   const scrollToCatalog = () => {
@@ -79,9 +74,10 @@ export default function Header() {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Login attempt with:', loginData);
     
     try {
-      const response = await fetch('http://localhost:3001/users/login', {
+      const response = await fetch('http://localhost:3001/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,16 +89,47 @@ export default function Header() {
       });
 
       const data = await response.json();
+      console.log('Login response:', data);
 
       if (!response.ok) {
         throw new Error(data.message || 'Ошибка при входе');
       }
 
+      // Сохраняем токен
+      if (data.token) {
+        console.log('Saving token:', data.token);
+        localStorage.setItem('token', data.token);
+      } else {
+        console.warn('No token received in login response');
+      }
+
+      // Сохраняем данные пользователя
+      const userData = {
+        name: data.firstName || data.name,
+        email: data.email,
+        phone: data.phone
+      };
+      
+      console.log('Saving user data:', userData);
+      
+      // Сохраняем в localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      // Обновляем состояние через контекст
+      setUser(userData);
+      
+      // Проверяем, что данные сохранились
+      console.log('User context after update:', user);
+      console.log('Stored token:', localStorage.getItem('token'));
+
       // Успешный вход
       toast.success('Вход выполнен успешно');
-      setShowLogin(false);
-      setLoginData({ login: '', password: '' });
-      router.refresh();
+    setShowLogin(false);
+    setLoginData({ login: '', password: '' });
+      
+      // Вместо router.refresh() используем router.push для перехода на текущую страницу
+      const currentPath = window.location.pathname;
+      router.push(currentPath);
     } catch (error) {
       console.error('Login error:', error);
       toast.error(error instanceof Error ? error.message : 'Ошибка при входе');
@@ -153,19 +180,28 @@ export default function Header() {
         throw new Error(data.message || 'Ошибка при регистрации');
       }
 
-      toast.success(`Здравствуйте, ${registerData.name}!`);
-      setShowRegister(false);
-      setRegisterData({
-        name: '',
-        login: '',
-        phone: '',
-        email: '',
-        password: ''
-      });
+    toast.success(`Здравствуйте, ${registerData.name}!`);
+    setShowRegister(false);
+    setRegisterData({
+      name: '',
+      login: '',
+      phone: '',
+      email: '',
+      password: ''
+    });
     } catch (error) {
       console.error('Registration error:', error);
       toast.error(error instanceof Error ? error.message : 'Ошибка при регистрации');
     }
+  };
+
+  const handleLogout = () => {
+    // Очищаем данные пользователя и токен
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    toast.success('Вы успешно вышли из аккаунта');
+    router.refresh();
   };
 
   return (
@@ -187,93 +223,104 @@ export default function Header() {
           {/* Кнопка каталога */}
           <button 
             onClick={scrollToCatalog}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            className="px-4 py-2 bg-[#4100FA] text-white rounded-md hover:bg-[#3500D0] transition-colors"
           >
             Каталог
           </button>
 
           {/* Кнопка корзины */}
           <div className="flex items-center gap-6">
-            <Link href="/cart" className="relative">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
+          <Link href="/cart" className="relative">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
               {cart?.itemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 bg-[#4100FA] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {cart.itemCount}
-                </span>
-              )}
-            </Link>
-          </div>
-
-          {/* Кнопка входа/регистрации */}
+              </span>
+            )}
+          </Link>
+        </div>
+        
+          {/* Кнопки входа/регистрации или выхода */}
           <div className="flex items-center gap-4">
+            {user ? (
+              <button 
+                onClick={handleLogout}
+                className="px-4 py-2 border border-[#4100FA] text-[#4100FA] rounded-md hover:bg-[#4100FA] hover:text-white transition-colors"
+              >
+                Выйти
+              </button>
+            ) : (
+              <>
             <button 
-              onClick={() => setShowLogin(!showLogin)}
-              className="px-4 py-2 border border-white-500 text-black-500 rounded-md hover:bg-grey-50 transition-colors"
+                  onClick={() => setShowLogin(!showLogin)}
+                  className="px-4 py-2 border border-[#4100FA] text-[#4100FA] rounded-md hover:bg-[#4100FA] hover:text-white transition-colors"
             >
               Вход
             </button>
             
-            <button
-              onClick={() => setIsRegisterModalOpen(true)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-            >
-              Регистрация
-            </button>
+                <button
+                  onClick={() => setIsRegisterModalOpen(true)}
+                  className="px-4 py-2 bg-[#4100FA] text-white rounded-md hover:bg-[#3500D0] transition-colors"
+                >
+                  Регистрация
+                </button>
+              </>
+            )}
           </div>
         </nav>
       </div>
 
       {/* Модальное окно входа */}
-      {showLogin && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg p-4 z-50">
-          <form onSubmit={handleLoginSubmit}>
-            <div className="mb-4">
+            {showLogin && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg p-4 z-50">
+                <form onSubmit={handleLoginSubmit}>
+                  <div className="mb-4">
               <label htmlFor="login-username" className="block text-sm font-medium mb-1">Логин</label>
-              <input
-                type="text"
+                    <input
+                      type="text"
                 id="login-username"
-                name="login"
-                value={loginData.login}
-                onChange={handleLoginChange}
-                className="w-full px-3 py-2 border rounded-md"
-                required
-              />
-            </div>
-            <div className="mb-4">
+                      name="login"
+                      value={loginData.login}
+                      onChange={handleLoginChange}
+                      className="w-full px-3 py-2 border rounded-md"
+                      required
+                    />
+                  </div>
+                  <div className="mb-4">
               <label htmlFor="login-password" className="block text-sm font-medium mb-1">Пароль</label>
-              <input
-                type="password"
+                    <input
+                      type="password"
                 id="login-password"
-                name="password"
-                value={loginData.password}
-                onChange={handleLoginChange}
-                className="w-full px-3 py-2 border rounded-md"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
-            >
-              Войти
-            </button>
-          </form>
-        </div>
-      )}
-
+                      name="password"
+                      value={loginData.password}
+                      onChange={handleLoginChange}
+                      className="w-full px-3 py-2 border rounded-md"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
+                  >
+                    Войти
+                  </button>
+                </form>
+              </div>
+            )}
+            
       {/* Модальное окно регистрации */}
       <RegisterModal
         isOpen={isRegisterModalOpen}
