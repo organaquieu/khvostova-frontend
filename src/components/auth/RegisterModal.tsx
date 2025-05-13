@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import toast from 'react-hot-toast';
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -10,6 +12,7 @@ interface RegisterModalProps {
 
 export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   const router = useRouter();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -29,38 +32,15 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted!');
     setIsLoading(true);
     setError('');
-
     try {
-      console.log('Form data before sending:', formData);
-
-      const response = await fetch('http://localhost:3001/users/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
-      const data = await response.json();
-      console.log('Response data:', data);
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Ошибка при регистрации');
-      }
-
-      // Успешная регистрация
-      console.log('Registration successful!');
+      await register.mutateAsync(formData);
+      toast.success(`Добро пожаловать, ${formData.firstName || formData.username}!`);
       onClose();
       router.refresh();
-    } catch (err) {
-      console.error('Registration error:', err);
-      setError(err instanceof Error ? err.message : 'Произошла ошибка');
+    } catch (err: any) {
+      setError(err?.message || 'Произошла ошибка');
     } finally {
       setIsLoading(false);
     }

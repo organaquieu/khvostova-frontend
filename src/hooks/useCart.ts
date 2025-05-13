@@ -1,8 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { cartApi } from '@/lib/api';
+import { cartApi, CartApiType } from '@/lib/api';
 import { useAuth } from './useAuth';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
+
+const typedCartApi: CartApiType = cartApi;
 
 export function useCart() {
   const { isAuthenticated } = useAuth();
@@ -15,7 +17,7 @@ export function useCart() {
         return [];
       }
       try {
-        const { data } = await cartApi.getCart();
+        const { data } = await typedCartApi.getCart();
         return data;
       } catch (error) {
         console.error('Error fetching cart:', error);
@@ -47,7 +49,7 @@ export function useAddToCart() {
         throw new Error('Not authenticated');
       }
       try {
-        const { data } = await cartApi.addToCart(cartItem);
+        const { data } = await typedCartApi.addToCart(cartItem);
         toast.success('Товар добавлен в корзину');
         return data;
       } catch (error) {
@@ -75,7 +77,7 @@ export function useUpdateCartItem() {
         throw new Error('Not authenticated');
       }
       try {
-        const { data: responseData } = await cartApi.updateCartItem(itemId, data);
+        const { data: responseData } = await typedCartApi.updateCartItem(itemId, data);
         return responseData;
       } catch (error) {
         console.error('Error updating cart item:', error);
@@ -102,7 +104,7 @@ export function useRemoveFromCart() {
         throw new Error('Not authenticated');
       }
       try {
-        await cartApi.removeFromCart(itemId);
+        await typedCartApi.removeFromCart(itemId);
         toast.success('Товар удален из корзины');
       } catch (error) {
         console.error('Error removing from cart:', error);
@@ -129,7 +131,7 @@ export function useClearCart() {
         throw new Error('Not authenticated');
       }
       try {
-        await cartApi.clearCart();
+        await typedCartApi.clearCart();
         toast.success('Корзина очищена');
       } catch (error) {
         console.error('Error clearing cart:', error);

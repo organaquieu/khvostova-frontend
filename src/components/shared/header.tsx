@@ -2,7 +2,7 @@
 // import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import Image from 'next/image';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 // import { Container } from './container';
@@ -27,8 +27,8 @@ interface Props {
 export default function Header() {
   const router = useRouter();
   const cart = useCart();
-  const { register: registerUser, login: loginUser } = useAuth();
-  const { user, setUser } = useUser();
+  const { register, login, logout, user } = useAuth();
+  const { user: userContext, setUser } = useUser();
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [loginData, setLoginData] = useState({ login: '', password: '' });
@@ -40,6 +40,11 @@ export default function Header() {
     password: ''
   });
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const scrollToCatalog = () => {
     // Если мы уже на главной, просто скроллим
@@ -74,134 +79,50 @@ export default function Header() {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login attempt with:', loginData);
-    
     try {
-      const response = await fetch('http://localhost:3001/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: loginData.login,
-          password: loginData.password
-        })
+      await login.mutateAsync({
+        username: loginData.login,
+        password: loginData.password,
       });
-
-      const data = await response.json();
-      console.log('Login response:', data);
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Ошибка при входе');
-      }
-
-      // Сохраняем токен
-      if (data.token) {
-        console.log('Saving token:', data.token);
-        localStorage.setItem('token', data.token);
-      } else {
-        console.warn('No token received in login response');
-      }
-
-      // Сохраняем данные пользователя
-      const userData = {
-        name: data.firstName || data.name,
-        email: data.email,
-        phone: data.phone
-      };
-      
-      console.log('Saving user data:', userData);
-      
-      // Сохраняем в localStorage
-      localStorage.setItem('user', JSON.stringify(userData));
-      
-      // Обновляем состояние через контекст
-      setUser(userData);
-      
-      // Проверяем, что данные сохранились
-      console.log('User context after update:', user);
-      console.log('Stored token:', localStorage.getItem('token'));
-
-      // Успешный вход
       toast.success('Вход выполнен успешно');
-    setShowLogin(false);
-    setLoginData({ login: '', password: '' });
-      
-      // Вместо router.refresh() используем router.push для перехода на текущую страницу
-      const currentPath = window.location.pathname;
-      router.push(currentPath);
-    } catch (error) {
-      console.error('Login error:', error);
-      toast.error(error instanceof Error ? error.message : 'Ошибка при входе');
+      setShowLogin(false);
+      setLoginData({ login: '', password: '' });
+    } catch (error: any) {
+      toast.error(error?.message || 'Ошибка при входе');
     }
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted!');
-    
-    // Проверяем, что данные формы доступны
-    if (!registerData) {
-      console.error('Register data is empty!');
-      return;
-    }
-    
-    // Проверяем, что все поля заполнены
     if (!registerData.name || !registerData.login || !registerData.password || !registerData.email || !registerData.phone) {
-      console.error('Some fields are empty:', registerData);
       toast.error('Пожалуйста, заполните все поля');
       return;
     }
-    
-    console.log('Starting registration with data:', registerData);
-    
     try {
-      console.log('Sending request to:', 'http://localhost:3001/users/register');
-      const response = await fetch('http://localhost:3001/users/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: registerData.login,
-          password: registerData.password,
-          firstName: registerData.name,
-          email: registerData.email,
-          phone: registerData.phone
-        })
+      await register.mutateAsync({
+        username: registerData.login,
+        password: registerData.password,
+        firstName: registerData.name,
+        email: registerData.email,
+        phone: registerData.phone,
       });
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
-      const data = await response.json();
-      console.log('Response data:', data);
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Ошибка при регистрации');
-      }
-
-    toast.success(`Здравствуйте, ${registerData.name}!`);
-    setShowRegister(false);
-    setRegisterData({
-      name: '',
-      login: '',
-      phone: '',
-      email: '',
-      password: ''
-    });
-    } catch (error) {
-      console.error('Registration error:', error);
-      toast.error(error instanceof Error ? error.message : 'Ошибка при регистрации');
+      toast.success(`Здравствуйте, ${registerData.name}!`);
+      setShowRegister(false);
+      setRegisterData({
+        name: '',
+        login: '',
+        phone: '',
+        email: '',
+        password: ''
+      });
+    } catch (error: any) {
+      toast.error(error?.message || 'Ошибка при регистрации');
     }
   };
 
   const handleLogout = () => {
-    // Очищаем данные пользователя и токен
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+    logout.mutate();
     toast.success('Вы успешно вышли из аккаунта');
-    router.refresh();
   };
 
   return (
@@ -245,7 +166,7 @@ export default function Header() {
                 d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
               />
             </svg>
-              {cart?.itemCount > 0 && (
+              {mounted && cart?.itemCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-[#4100FA] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {cart.itemCount}
               </span>
