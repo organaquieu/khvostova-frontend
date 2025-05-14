@@ -41,6 +41,7 @@ export default function Header() {
   });
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -129,7 +130,7 @@ export default function Header() {
     <header className="bg-white shadow-md py-4 px-6 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Логотип */}
-         <button onClick={scrollToTop} className="flex items-center">
+        <button onClick={scrollToTop} className="flex items-center">
           <Image
             src="/pictures/logo.png"
             alt="{ХВОСТОВА}"
@@ -137,44 +138,50 @@ export default function Header() {
             height={80}
             className="h-10 w-auto"
           />
-         </button> 
+        </button>
 
-        {/* Навигация */}
-        <nav className="flex items-center space-x-6">
-          {/* Кнопка каталога */}
+        {/* Бургер-меню для мобильных */}
+        <button
+          className="md:hidden p-2"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Открыть меню"
+        >
+          <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
+        {/* Навигация для десктопа */}
+        <nav className="hidden md:flex items-center space-x-6">
           <button 
             onClick={scrollToCatalog}
             className="px-4 py-2 bg-[#4100FA] text-white rounded-md hover:bg-[#3500D0] transition-colors"
           >
             Каталог
           </button>
-
-          {/* Кнопка корзины */}
           <div className="flex items-center gap-6">
-          <Link href="/cart" className="relative">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-            </svg>
+            <Link href="/cart" className="relative">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                />
+              </svg>
               {mounted && cart?.itemCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-[#4100FA] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {cart.itemCount}
-              </span>
-            )}
-          </Link>
-        </div>
-        
-          {/* Кнопки входа/регистрации или выхода */}
+                </span>
+              )}
+            </Link>
+          </div>
           <div className="flex items-center gap-4">
             {user ? (
               <button 
@@ -185,13 +192,12 @@ export default function Header() {
               </button>
             ) : (
               <>
-            <button 
+                <button 
                   onClick={() => setShowLogin(!showLogin)}
                   className="px-4 py-2 border border-[#4100FA] text-[#4100FA] rounded-md hover:bg-[#4100FA] hover:text-white transition-colors"
-            >
-              Вход
-            </button>
-            
+                >
+                  Вход
+                </button>
                 <button
                   onClick={() => setIsRegisterModalOpen(true)}
                   className="px-4 py-2 bg-[#4100FA] text-white rounded-md hover:bg-[#3500D0] transition-colors"
@@ -204,44 +210,85 @@ export default function Header() {
         </nav>
       </div>
 
-      {/* Модальное окно входа */}
-            {showLogin && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg p-4 z-50">
-                <form onSubmit={handleLoginSubmit}>
-                  <div className="mb-4">
-              <label htmlFor="login-username" className="block text-sm font-medium mb-1">Логин</label>
-                    <input
-                      type="text"
-                id="login-username"
-                      name="login"
-                      value={loginData.login}
-                      onChange={handleLoginChange}
-                      className="w-full px-3 py-2 border rounded-md"
-                      required
-                    />
-                  </div>
-                  <div className="mb-4">
-              <label htmlFor="login-password" className="block text-sm font-medium mb-1">Пароль</label>
-                    <input
-                      type="password"
-                id="login-password"
-                      name="password"
-                      value={loginData.password}
-                      onChange={handleLoginChange}
-                      className="w-full px-3 py-2 border rounded-md"
-                      required
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
-                  >
-                    Войти
-                  </button>
-                </form>
-              </div>
+      {/* Мобильное меню */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex justify-end md:hidden">
+          <div className="bg-white w-64 h-full p-6 flex flex-col space-y-4">
+            <button
+              className="self-end mb-4"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-label="Закрыть меню"
+            >
+              <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <button onClick={() => { scrollToCatalog(); setMobileMenuOpen(false); }} className="w-full px-4 py-2 bg-[#4100FA] text-white rounded-md hover:bg-[#3500D0] transition-colors">
+              Каталог
+            </button>
+            <Link href="/cart" className="w-full flex items-center px-4 py-2 border rounded-md">
+              Корзина
+              {mounted && cart?.itemCount > 0 && (
+                <span className="ml-2 bg-[#4100FA] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {cart.itemCount}
+                </span>
+              )}
+            </Link>
+            {user ? (
+              <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} className="w-full px-4 py-2 border border-[#4100FA] text-[#4100FA] rounded-md hover:bg-[#4100FA] hover:text-white transition-colors">
+                Выйти
+              </button>
+            ) : (
+              <>
+                <button onClick={() => { setShowLogin(true); setMobileMenuOpen(false); }} className="w-full px-4 py-2 border border-[#4100FA] text-[#4100FA] rounded-md hover:bg-[#4100FA] hover:text-white transition-colors">
+                  Вход
+                </button>
+                <button onClick={() => { setIsRegisterModalOpen(true); setMobileMenuOpen(false); }} className="w-full px-4 py-2 bg-[#4100FA] text-white rounded-md hover:bg-[#3500D0] transition-colors">
+                  Регистрация
+                </button>
+              </>
             )}
-            
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно входа */}
+      {showLogin && (
+        <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg p-4 z-50">
+          <form onSubmit={handleLoginSubmit}>
+            <div className="mb-4">
+              <label htmlFor="login-username" className="block text-sm font-medium mb-1">Логин</label>
+              <input
+                type="text"
+                id="login-username"
+                name="login"
+                value={loginData.login}
+                onChange={handleLoginChange}
+                className="w-full px-3 py-2 border rounded-md"
+                required
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="login-password" className="block text-sm font-medium mb-1">Пароль</label>
+              <input
+                type="password"
+                id="login-password"
+                name="password"
+                value={loginData.password}
+                onChange={handleLoginChange}
+                className="w-full px-3 py-2 border rounded-md"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
+            >
+              Войти
+            </button>
+          </form>
+        </div>
+      )}
       {/* Модальное окно регистрации */}
       <RegisterModal
         isOpen={isRegisterModalOpen}

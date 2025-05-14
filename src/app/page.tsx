@@ -16,7 +16,7 @@ export default function Home() {
       <section id="catalog-section" className="scroll-mt-20">
         <ProductCatalog />
       </section>
-      <TestConnection />
+      {/* <TestConnection /> */}
       <Footer />
       {/* Другие секции вашей главной страницы */}
     </main>
