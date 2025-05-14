@@ -10,6 +10,7 @@ interface CartItem {
   image: string;
   productType: 'dress' | 'bracelet' | 'necklace';
   size?: string;
+  customMeasurement?: number;
   measurements?: {
     shoulders?: number;
     waist?: number;
